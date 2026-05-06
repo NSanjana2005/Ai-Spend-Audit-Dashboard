@@ -2,17 +2,24 @@
 import { useState } from "react";
 
 export default function Home() {
-  const [tool, setTool] = useState("");
-  const [plan, setPlan] = useState("");
-  const [cost, setCost] = useState("");
-  const [users, setUsers] = useState("");
+  const [tools, setTools] = useState([
+    { tool: "", plan: "", cost: "", users: "" },
+  ]);
+
+  const handleChange = (index: number, field: string, value: string) => {
+    const updated = [...tools];
+    updated[index][field as keyof typeof updated[0]] = value;
+    setTools(updated);
+  };
+
+  const addTool = () => {
+    setTools([...tools, { tool: "", plan: "", cost: "", users: "" }]);
+  };
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-
-    alert(
-      `Tool: ${tool}\nPlan: ${plan}\nCost: ${cost}\nUsers: ${users}`
-    );
+    console.log(tools);
+    alert("Check console for data");
   };
 
   return (
@@ -25,41 +32,61 @@ export default function Home() {
           AI Spend Audit
         </h2>
 
-        <input
-          type="text"
-          placeholder="Tool (e.g. ChatGPT)"
-          value={tool}
-          onChange={(e) => setTool(e.target.value)}
-          className="w-full mb-3 p-2 border rounded"
-        />
+        {tools.map((t, index) => (
+          <div key={index} className="mb-4 border p-3 rounded">
+            <input
+              type="text"
+              placeholder="Tool"
+              value={t.tool}
+              onChange={(e) =>
+                handleChange(index, "tool", e.target.value)
+              }
+              className="w-full mb-2 p-2 border rounded"
+            />
 
-        <input
-          type="text"
-          placeholder="Plan (e.g. Plus)"
-          value={plan}
-          onChange={(e) => setPlan(e.target.value)}
-          className="w-full mb-3 p-2 border rounded"
-        />
+            <input
+              type="text"
+              placeholder="Plan"
+              value={t.plan}
+              onChange={(e) =>
+                handleChange(index, "plan", e.target.value)
+              }
+              className="w-full mb-2 p-2 border rounded"
+            />
 
-        <input
-          type="number"
-          placeholder="Monthly Cost ($)"
-          value={cost}
-          onChange={(e) => setCost(e.target.value)}
-          className="w-full mb-3 p-2 border rounded"
-        />
+            <input
+              type="number"
+              placeholder="Cost ($)"
+              value={t.cost}
+              onChange={(e) =>
+                handleChange(index, "cost", e.target.value)
+              }
+              className="w-full mb-2 p-2 border rounded"
+            />
 
-        <input
-          type="number"
-          placeholder="Number of Users"
-          value={users}
-          onChange={(e) => setUsers(e.target.value)}
-          className="w-full mb-3 p-2 border rounded"
-        />
+            <input
+              type="number"
+              placeholder="Users"
+              value={t.users}
+              onChange={(e) =>
+                handleChange(index, "users", e.target.value)
+              }
+              className="w-full p-2 border rounded"
+            />
+          </div>
+        ))}
+
+        <button
+          type="button"
+          onClick={addTool}
+          className="w-full mb-3 bg-gray-200 p-2 rounded"
+        >
+          + Add Another Tool
+        </button>
 
         <button
           type="submit"
-          className="w-full bg-black text-white p-2 rounded hover:bg-gray-800"
+          className="w-full bg-black text-white p-2 rounded"
         >
           Check Savings
         </button>
