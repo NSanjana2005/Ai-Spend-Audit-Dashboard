@@ -25,8 +25,8 @@ export default function Home() {
     setTools([...tools, { tool: "", plan: "", cost: "", users: "" }]);
   };
 
-  // ✅ AUDIT ENGINE
-  const auditTools = (tools: any[]) => {
+  // ✅ UPDATED AUDIT ENGINE
+  const auditTools = (tools: any[], teamSize: any) => {
     let results = [];
     let totalSavings = 0;
 
@@ -37,14 +37,22 @@ export default function Home() {
 
       const users = Number(t.users);
       const cost = Number(t.cost);
+      const team = Number(teamSize);
 
+      // 🔹 Rule 1: ChatGPT Team → Plus if small tool users
       if (t.tool === "ChatGPT" && t.plan === "Team" && users <= 3) {
         const newCost = 20 * users;
         const currentCost = cost * users;
         savings = currentCost - newCost;
 
         suggestion = "Switch to ChatGPT Plus";
-        reason = "Team plan is expensive for small teams";
+        reason = "Team plan is expensive for small usage";
+      }
+
+      // 🔹 Rule 2: Small overall team using Team plan
+      if (t.plan === "Team" && team <= 3) {
+        suggestion = "Team plan may be unnecessary";
+        reason = "Your total team size is small";
       }
 
       totalSavings += savings;
@@ -63,7 +71,7 @@ export default function Home() {
   const handleSubmit = (e: any) => {
     e.preventDefault();
 
-    const audit = auditTools(tools);
+    const audit = auditTools(tools, teamSize);
 
     console.log(audit);
     alert(`You can save $${audit.totalSavings}/month`);
