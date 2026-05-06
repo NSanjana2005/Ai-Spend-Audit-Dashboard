@@ -1,33 +1,60 @@
 "use client";
 import { useState } from "react";
 
-const TOOL_OPTIONS = {
+const TOOL_OPTIONS: Record<string, string[]> = {
   ChatGPT: ["Plus", "Team", "Enterprise", "API"],
   Claude: ["Free", "Pro", "Max", "Team", "Enterprise", "API"],
   Copilot: ["Individual", "Business", "Enterprise"],
   Cursor: ["Hobby", "Pro", "Business"],
 };
 
+type ToolType = {
+  tool: string;
+  plan: string;
+  cost: string;
+  users: string;
+};
+
 export default function Home() {
   const [teamSize, setTeamSize] = useState("");
   const [useCase, setUseCase] = useState("");
-  const [tools, setTools] = useState([
+  const [auditResult, setAuditResult] = useState<any>(null); // ✅ FIXED
+  const [tools, setTools] = useState<ToolType[]>([
     { tool: "", plan: "", cost: "", users: "" },
   ]);
 
-  const handleChange = (index: number, field: string, value: string) => {
+  const handleChange = (
+    index: number,
+    field: "tool" | "plan" | "cost" | "users",
+    value: string
+  ) => {
     const updated = [...tools];
-    updated[index][field as keyof typeof updated[0]] = value;
+
+    if (field === "tool") {
+      updated[index] = {
+        ...updated[index],
+        tool: value,
+        plan: "",
+      };
+    } else {
+      updated[index] = {
+        ...updated[index],
+        [field]: value,
+      };
+    }
+
     setTools(updated);
   };
 
   const addTool = () => {
-    setTools([...tools, { tool: "", plan: "", cost: "", users: "" }]);
+    setTools([
+      ...tools,
+      { tool: "", plan: "", cost: "", users: "" },
+    ]);
   };
 
-  // ✅ UPDATED AUDIT ENGINE
-  const auditTools = (tools: any[], teamSize: any) => {
-    let results = [];
+  const auditTools = (tools: ToolType[]) => {
+    let results: any[] = [];
     let totalSavings = 0;
 
     tools.forEach((t) => {
@@ -37,22 +64,14 @@ export default function Home() {
 
       const users = Number(t.users);
       const cost = Number(t.cost);
-      const team = Number(teamSize);
 
-      // 🔹 Rule 1: ChatGPT Team → Plus if small tool users
       if (t.tool === "ChatGPT" && t.plan === "Team" && users <= 3) {
         const newCost = 20 * users;
         const currentCost = cost * users;
         savings = currentCost - newCost;
 
         suggestion = "Switch to ChatGPT Plus";
-        reason = "Team plan is expensive for small usage";
-      }
-
-      // 🔹 Rule 2: Small overall team using Team plan
-      if (t.plan === "Team" && team <= 3) {
-        suggestion = "Team plan may be unnecessary";
-        reason = "Your total team size is small";
+        reason = "Team plan is expensive for small teams";
       }
 
       totalSavings += savings;
@@ -68,17 +87,19 @@ export default function Home() {
     return { results, totalSavings };
   };
 
-  const handleSubmit = (e: any) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const audit = auditTools(tools, teamSize);
-
+    const audit = auditTools(tools);
     console.log(audit);
-    alert(`You can save $${audit.totalSavings}/month`);
+
+    setAuditResult(audit);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+      
+      {/* FORM */}
       <form
         onSubmit={handleSubmit}
         className="bg-white p-6 rounded-xl shadow-md w-96"
@@ -89,6 +110,8 @@ export default function Home() {
 
         {tools.map((t, index) => (
           <div key={index} className="mb-4 border p-3 rounded">
+            
+            {/* TOOL */}
             <select
               value={t.tool}
               onChange={(e) =>
@@ -104,24 +127,27 @@ export default function Home() {
               ))}
             </select>
 
+            {/* PLAN */}
             <select
               value={t.plan}
               onChange={(e) =>
                 handleChange(index, "plan", e.target.value)
               }
               className="w-full mb-2 p-2 border rounded"
+              disabled={!t.tool}
             >
-              <option value="">Select Plan</option>
-              {t.tool &&
-                TOOL_OPTIONS[t.tool as keyof typeof TOOL_OPTIONS]?.map(
-                  (plan) => (
-                    <option key={plan} value={plan}>
-                      {plan}
-                    </option>
-                  )
-                )}
+              <option value="">
+                {t.tool ? "Select Plan" : "Select Tool first"}
+              </option>
+
+              {(TOOL_OPTIONS[t.tool] || []).map((plan) => (
+                <option key={plan} value={plan}>
+                  {plan}
+                </option>
+              ))}
             </select>
 
+            {/* COST */}
             <input
               type="number"
               placeholder="Cost ($)"
@@ -132,6 +158,7 @@ export default function Home() {
               className="w-full mb-2 p-2 border rounded"
             />
 
+            {/* USERS */}
             <input
               type="number"
               placeholder="Users"
@@ -144,6 +171,7 @@ export default function Home() {
           </div>
         ))}
 
+        {/* TEAM SIZE */}
         <input
           type="number"
           placeholder="Team Size"
@@ -152,6 +180,7 @@ export default function Home() {
           className="w-full mb-3 p-2 border rounded"
         />
 
+        {/* USE CASE */}
         <select
           value={useCase}
           onChange={(e) => setUseCase(e.target.value)}
@@ -165,6 +194,7 @@ export default function Home() {
           <option value="mixed">Mixed</option>
         </select>
 
+        {/* ADD TOOL */}
         <button
           type="button"
           onClick={addTool}
@@ -173,6 +203,7 @@ export default function Home() {
           + Add Another Tool
         </button>
 
+        {/* SUBMIT */}
         <button
           type="submit"
           className="w-full bg-black text-white p-2 rounded"
@@ -180,6 +211,32 @@ export default function Home() {
           Check Savings
         </button>
       </form>
+
+      {/* RESULT UI */}
+      {auditResult && (
+        <div className="mt-6 bg-white p-6 rounded-xl shadow-md w-96">
+          <h2 className="text-xl font-bold mb-3 text-center">
+            Your Savings
+          </h2>
+
+          <p className="text-2xl font-bold text-green-600 text-center">
+            ${auditResult.totalSavings}/month
+          </p>
+
+          <div className="mt-4">
+            {auditResult.results.map((r: any, i: number) => (
+              <div key={i} className="border p-3 rounded mb-2">
+                <p><b>{r.tool}</b> ({r.plan})</p>
+                <p>💡 {r.suggestion}</p>
+                <p className="text-sm text-gray-600">{r.reason}</p>
+                <p className="text-green-600">
+                  Save: ${r.savings}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
