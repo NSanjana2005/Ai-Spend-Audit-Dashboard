@@ -1,11 +1,13 @@
 "use client";
 import { useState } from "react";
+
 const TOOL_OPTIONS = {
   ChatGPT: ["Plus", "Team", "Enterprise", "API"],
   Claude: ["Free", "Pro", "Max", "Team", "Enterprise", "API"],
   Copilot: ["Individual", "Business", "Enterprise"],
   Cursor: ["Hobby", "Pro", "Business"],
 };
+
 export default function Home() {
   const [teamSize, setTeamSize] = useState("");
   const [useCase, setUseCase] = useState("");
@@ -23,17 +25,48 @@ export default function Home() {
     setTools([...tools, { tool: "", plan: "", cost: "", users: "" }]);
   };
 
+  // ✅ AUDIT ENGINE
+  const auditTools = (tools: any[]) => {
+    let results = [];
+    let totalSavings = 0;
+
+    tools.forEach((t) => {
+      let savings = 0;
+      let suggestion = "Looks fine";
+      let reason = "You're on a reasonable plan";
+
+      const users = Number(t.users);
+      const cost = Number(t.cost);
+
+      if (t.tool === "ChatGPT" && t.plan === "Team" && users <= 3) {
+        const newCost = 20 * users;
+        const currentCost = cost * users;
+        savings = currentCost - newCost;
+
+        suggestion = "Switch to ChatGPT Plus";
+        reason = "Team plan is expensive for small teams";
+      }
+
+      totalSavings += savings;
+
+      results.push({
+        ...t,
+        savings,
+        suggestion,
+        reason,
+      });
+    });
+
+    return { results, totalSavings };
+  };
+
   const handleSubmit = (e: any) => {
     e.preventDefault();
 
-    const finalData = {
-      tools,
-      teamSize,
-      useCase,
-    };
+    const audit = auditTools(tools);
 
-    console.log(finalData);
-    alert("Check console for full data");
+    console.log(audit);
+    alert(`You can save $${audit.totalSavings}/month`);
   };
 
   return (
@@ -62,6 +95,7 @@ export default function Home() {
                 </option>
               ))}
             </select>
+
             <select
               value={t.plan}
               onChange={(e) =>
@@ -79,6 +113,7 @@ export default function Home() {
                   )
                 )}
             </select>
+
             <input
               type="number"
               placeholder="Cost ($)"
@@ -100,6 +135,7 @@ export default function Home() {
             />
           </div>
         ))}
+
         <input
           type="number"
           placeholder="Team Size"
@@ -120,6 +156,7 @@ export default function Home() {
           <option value="research">Research</option>
           <option value="mixed">Mixed</option>
         </select>
+
         <button
           type="button"
           onClick={addTool}
