@@ -1,6 +1,11 @@
 "use client";
 import { useState } from "react";
-
+const TOOL_OPTIONS = {
+  ChatGPT: ["Plus", "Team", "Enterprise", "API"],
+  Claude: ["Free", "Pro", "Max", "Team", "Enterprise", "API"],
+  Copilot: ["Individual", "Business", "Enterprise"],
+  Cursor: ["Hobby", "Pro", "Business"],
+};
 export default function Home() {
   const [tools, setTools] = useState([
     { tool: "", plan: "", cost: "", users: "" },
@@ -34,26 +39,37 @@ export default function Home() {
 
         {tools.map((t, index) => (
           <div key={index} className="mb-4 border p-3 rounded">
-            <input
-              type="text"
-              placeholder="Tool"
+            <select
               value={t.tool}
               onChange={(e) =>
                 handleChange(index, "tool", e.target.value)
               }
               className="w-full mb-2 p-2 border rounded"
-            />
-
-            <input
-              type="text"
-              placeholder="Plan"
+            >
+              <option value="">Select Tool</option>
+              {Object.keys(TOOL_OPTIONS).map((tool) => (
+                <option key={tool} value={tool}>
+                  {tool}
+                </option>
+              ))}
+            </select>
+            <select
               value={t.plan}
               onChange={(e) =>
                 handleChange(index, "plan", e.target.value)
               }
               className="w-full mb-2 p-2 border rounded"
-            />
-
+            >
+              <option value="">Select Plan</option>
+              {t.tool &&
+                TOOL_OPTIONS[t.tool as keyof typeof TOOL_OPTIONS]?.map(
+                  (plan) => (
+                    <option key={plan} value={plan}>
+                      {plan}
+                    </option>
+                  )
+                )}
+            </select>
             <input
               type="number"
               placeholder="Cost ($)"
