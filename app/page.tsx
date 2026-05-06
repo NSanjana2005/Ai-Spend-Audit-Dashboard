@@ -7,6 +7,8 @@ const TOOL_OPTIONS = {
   Cursor: ["Hobby", "Pro", "Business"],
 };
 export default function Home() {
+  const [teamSize, setTeamSize] = useState("");
+  const [useCase, setUseCase] = useState("");
   const [tools, setTools] = useState([
     { tool: "", plan: "", cost: "", users: "" },
   ]);
@@ -23,8 +25,15 @@ export default function Home() {
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
-    console.log(tools);
-    alert("Check console for data");
+
+    const finalData = {
+      tools,
+      teamSize,
+      useCase,
+    };
+
+    console.log(finalData);
+    alert("Check console for full data");
   };
 
   return (
@@ -91,7 +100,26 @@ export default function Home() {
             />
           </div>
         ))}
+        <input
+          type="number"
+          placeholder="Team Size"
+          value={teamSize}
+          onChange={(e) => setTeamSize(e.target.value)}
+          className="w-full mb-3 p-2 border rounded"
+        />
 
+        <select
+          value={useCase}
+          onChange={(e) => setUseCase(e.target.value)}
+          className="w-full mb-3 p-2 border rounded"
+        >
+          <option value="">Select Use Case</option>
+          <option value="coding">Coding</option>
+          <option value="writing">Writing</option>
+          <option value="data">Data</option>
+          <option value="research">Research</option>
+          <option value="mixed">Mixed</option>
+        </select>
         <button
           type="button"
           onClick={addTool}
