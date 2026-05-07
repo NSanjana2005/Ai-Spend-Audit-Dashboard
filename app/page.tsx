@@ -20,6 +20,9 @@ export default function Home() {
   const [useCase, setUseCase] = useState("");
   const [auditResult, setAuditResult] = useState<any>(null); // ✅ FIXED
   const [aiSummary, setAiSummary] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [role, setRole] = useState("");
   const [tools, setTools] = useState<ToolType[]>([
     { tool: "", plan: "", cost: "", users: "" },
   ]);
@@ -401,6 +404,58 @@ export default function Home() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+          {/* EMAIL CAPTURE */}
+          <div className="mt-8 border-t pt-6">
+            <h3 className="text-lg font-semibold mb-4">
+              Get Full Audit Report
+            </h3>
+
+            <p className="text-sm text-gray-600 mb-4">
+              Save your audit and receive future optimization updates.
+            </p>
+
+            <div className="space-y-3">
+              <input
+                type="email"
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full border rounded-lg p-3"
+              />
+
+              <input
+                type="text"
+                placeholder="Company Name (optional)"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                className="w-full border rounded-lg p-3"
+              />
+
+              <input
+                type="text"
+                placeholder="Your Role (optional)"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="w-full border rounded-lg p-3"
+              />
+
+              <button
+                className="w-full bg-black text-white p-3 rounded-lg hover:bg-gray-800 transition"
+                onClick={() => {
+                  console.log({
+                    email,
+                    company,
+                    role,
+                    auditResult,
+                  });
+
+                  alert("Report saved successfully!");
+                }}
+              >
+                Save Report
+              </button>
             </div>
           </div>
         </div>
