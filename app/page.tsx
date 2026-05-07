@@ -177,20 +177,26 @@ export default function Home() {
     e.preventDefault();
 
     const audit = auditTools(tools);
+
     console.log(audit);
 
     setAuditResult(audit);
-    const generateSummary = (audit: any) => {
-      if (audit.totalSavings > 500) {
-        return `Your company appears to be overspending on AI tooling relative to team size. Several plans could be downgraded without significantly affecting productivity. Based on your current stack, optimizing subscriptions could save thousands annually while maintaining similar capabilities.`;
-      }
 
-      if (audit.totalSavings > 0) {
-        return `Your AI stack has some optimization opportunities. A few tools appear slightly over-provisioned for your current team size and usage patterns. Small subscription adjustments could reduce monthly costs while keeping the same workflows intact.`;
-      }
+    // 🔥 Generate AI summary
+    let summary = "";
 
-      return `Your current AI tooling setup appears well optimized. No major overspending opportunities were detected based on your selected tools, plans, and usage.`;
-    };
+    if (audit.totalSavings > 500) {
+      summary =
+        "Your company appears to be overspending on AI subscriptions relative to team size. Several tools could be downgraded to lower-cost plans while maintaining similar functionality. Optimizing your stack may significantly reduce annual AI expenses.";
+    } else if (audit.totalSavings > 0) {
+      summary =
+        "Your AI stack has some optimization opportunities. A few plans appear more expensive than necessary for your current usage and team size. Minor adjustments could reduce costs without affecting productivity.";
+    } else {
+      summary =
+        "Your current AI tooling setup appears well optimized. No major overspending opportunities were detected based on your selected tools and usage.";
+    }
+
+    setAiSummary(summary);
   };
 
   return (
