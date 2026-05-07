@@ -143,7 +143,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 p-4">
+    <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
       
       {/* FORM */}
       <form
@@ -260,29 +260,85 @@ export default function Home() {
 
       {/* RESULT UI */}
       {auditResult && (
-        <div className="mt-6 bg-white p-6 rounded-xl shadow-md w-96">
-          <h2 className="text-xl font-bold mb-3 text-center">
-            Your Savings
-          </h2>
+  <div className="mt-6 w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6">
+    
+    {/* HERO SECTION */}
+    <div className="text-center border-b pb-6 mb-6">
+      <p className="text-sm uppercase tracking-wide text-gray-500">
+        Estimated Savings
+      </p>
 
-          <p className="text-2xl font-bold text-green-600 text-center">
-            ${auditResult.totalSavings}/month
-          </p>
+      <h2 className="text-5xl font-bold text-green-600 mt-2">
+        ${auditResult.totalSavings}
+        <span className="text-lg text-gray-500 font-medium">
+          /month
+        </span>
+      </h2>
 
-          <div className="mt-4">
-            {auditResult.results.map((r: any, i: number) => (
-              <div key={i} className="border p-3 rounded mb-2">
-                <p><b>{r.tool}</b> ({r.plan})</p>
-                <p>💡 {r.suggestion}</p>
-                <p className="text-sm text-gray-600">{r.reason}</p>
-                <p className="text-green-600">
-                  Save: ${r.savings}
-                </p>
-              </div>
-            ))}
-          </div>
+      <p className="text-gray-600 mt-2">
+        ${(auditResult.totalSavings * 12).toLocaleString()} yearly savings
+      </p>
+
+      {auditResult.totalSavings >= 500 ? (
+        <div className="mt-4 bg-green-100 text-green-800 p-3 rounded-lg text-sm">
+          High savings opportunity detected. Credex could help reduce your AI infrastructure costs further.
+        </div>
+      ) : (
+        <div className="mt-4 bg-blue-100 text-blue-800 p-3 rounded-lg text-sm">
+          Your stack looks fairly optimized already.
         </div>
       )}
+    </div>
+
+    {/* TOOL BREAKDOWN */}
+    <div>
+      <h3 className="text-lg font-semibold mb-4">
+        Audit Breakdown
+      </h3>
+
+      <div className="space-y-4">
+        {auditResult.results.map((r: any, i: number) => (
+          <div
+            key={i}
+            className="border rounded-xl p-4 hover:shadow-md transition"
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <h4 className="font-semibold text-lg">
+                  {r.tool}
+                </h4>
+
+                <p className="text-sm text-gray-500">
+                  Current Plan: {r.plan}
+                </p>
+              </div>
+
+              <div className="text-right">
+                <p className="text-green-600 font-bold text-lg">
+                  ${r.savings}
+                </p>
+
+                <p className="text-xs text-gray-500">
+                  monthly savings
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-3">
+              <p className="font-medium">
+                💡 {r.suggestion}
+              </p>
+
+              <p className="text-sm text-gray-600 mt-1">
+                {r.reason}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
