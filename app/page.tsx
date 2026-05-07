@@ -54,39 +54,85 @@ export default function Home() {
   };
 
   const auditTools = (tools: ToolType[]) => {
-    let results: any[] = [];
-    let totalSavings = 0;
+  let results: any[] = [];
+  let totalSavings = 0;
 
-    tools.forEach((t) => {
-      let savings = 0;
-      let suggestion = "Looks fine";
-      let reason = "You're on a reasonable plan";
+  tools.forEach((t) => {
+    let savings = 0;
+    let suggestion = "Looks fine";
+    let reason = "You're already on a good plan";
 
-      const users = Number(t.users);
-      const cost = Number(t.cost);
+    const users = Number(t.users);
+    const cost = Number(t.cost);
+    const totalCurrentCost = users * cost;
 
-      if (t.tool === "ChatGPT" && t.plan === "Team" && users <= 3) {
-        const newCost = 20 * users;
-        const currentCost = cost * users;
-        savings = currentCost - newCost;
+    // 🔹 ChatGPT Rule
+    if (t.tool === "ChatGPT" && t.plan === "Team" && users <= 3) {
+      const newCost = 20 * users;
 
-        suggestion = "Switch to ChatGPT Plus";
-        reason = "Team plan is expensive for small teams";
-      }
+      savings = totalCurrentCost - newCost;
 
-      totalSavings += savings;
+      suggestion = "Switch to ChatGPT Plus";
+      reason = "Small teams usually don't need Team plan";
+    }
 
-      results.push({
-        ...t,
-        savings,
-        suggestion,
-        reason,
-      });
+    // 🔹 Claude Rule
+    if (t.tool === "Claude" && t.plan === "Team" && users <= 3) {
+      const newCost = 20 * users;
+
+      savings = totalCurrentCost - newCost;
+
+      suggestion = "Use Claude Pro";
+      reason = "Claude Team plan is expensive for small teams";
+    }
+
+    // 🔹 Copilot Rule
+    if (
+      t.tool === "Copilot" &&
+      t.plan === "Business" &&
+      users <= 2
+    ) {
+      const newCost = 10 * users;
+
+      savings = totalCurrentCost - newCost;
+
+      suggestion = "Switch to Copilot Individual";
+      reason = "Business plan unnecessary for very small teams";
+    }
+
+    // 🔹 Cursor Rule
+    if (
+      t.tool === "Cursor" &&
+      t.plan === "Business" &&
+      users <= 2
+    ) {
+      const newCost = 20 * users;
+
+      savings = totalCurrentCost - newCost;
+
+      suggestion = "Switch to Cursor Pro";
+      reason = "Business plan may be overkill";
+    }
+
+    // 🔹 Honest Result
+    if (savings <= 0) {
+      savings = 0;
+      suggestion = "Current setup looks optimized";
+      reason = "No obvious savings opportunity found";
+    }
+
+    totalSavings += savings;
+
+    results.push({
+      ...t,
+      savings,
+      suggestion,
+      reason,
     });
+  });
 
-    return { results, totalSavings };
-  };
-
+  return { results, totalSavings };
+};
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
