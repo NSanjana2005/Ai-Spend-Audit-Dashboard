@@ -1,6 +1,7 @@
-"use client";
-import { useEffect, useState } from "react";
 
+"use client";
+import { supabase } from "../lib/supabase";
+import { useEffect, useState } from "react";
 const TOOL_OPTIONS: Record<string, string[]> = {
   ChatGPT: ["Plus", "Team", "Enterprise", "API"],
   Claude: ["Free", "Pro", "Max", "Team", "Enterprise", "API"],
@@ -443,13 +444,28 @@ export default function Home() {
 
               <button
                 className="w-full bg-black text-white p-3 rounded-lg hover:bg-gray-800 transition"
-                onClick={() => {
-                  console.log({
-                    email,
-                    company,
-                    role,
-                    auditResult,
-                  });
+                onClick={async () => {
+                  if (!email) {
+                    alert("Email is required");
+                    return;
+                  }
+
+                  const { error } = await supabase
+                    .from("leads")
+                    .insert([
+                      {
+                        email,
+                        company,
+                        role,
+                        audit: auditResult,
+                      },
+                    ]);
+
+                  if (error) {
+                    console.error(error);
+                    alert("Failed to save report");
+                    return;
+                  }
 
                   alert("Report saved successfully!");
                 }}
