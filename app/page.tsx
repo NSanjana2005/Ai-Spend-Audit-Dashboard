@@ -166,42 +166,35 @@ export default function Home() {
 
     return { results, totalSavings };
   };
-  const generateSummary = (audit: any) => {
-    if (audit.totalSavings > 500) {
-      return `Your company appears to be overspending on AI tooling relative to team size. Several plans could be downgraded without significantly affecting productivity. Based on your current stack, optimizing subscriptions could save thousands annually while maintaining similar capabilities.`;
-    }
+ const handleSubmit = async (
+  e: React.FormEvent
+) => {
+  e.preventDefault();
 
-    if (audit.totalSavings > 0) {
-      return `Your AI stack has some optimization opportunities. A few tools appear slightly over-provisioned for your current team size and usage patterns. Small subscription adjustments could reduce monthly costs while keeping the same workflows intact.`;
-    }
+  const audit = auditTools(tools);
 
-    return `Your current AI tooling setup appears well optimized. No major overspending opportunities were detected based on your selected tools, plans, and usage.`;
-  };
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  setAuditResult(audit);
 
-    const audit = auditTools(tools);
+  try {
+    const response = await fetch("/api/summary", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(audit),
+    });
 
-    console.log(audit);
+    const data = await response.json();
 
-    setAuditResult(audit);
+    setAiSummary(data.summary);
+  } catch (error) {
+    console.error(error);
 
-    // 🔥 Generate AI summary
-    let summary = "";
-
-    if (audit.totalSavings > 500) {
-      summary =
-        "Your company appears to be overspending on AI subscriptions relative to team size. Several tools could be downgraded to lower-cost plans while maintaining similar functionality. Optimizing your stack may significantly reduce annual AI expenses.";
-    } else if (audit.totalSavings > 0) {
-      summary =
-        "Your AI stack has some optimization opportunities. A few plans appear more expensive than necessary for your current usage and team size. Minor adjustments could reduce costs without affecting productivity.";
-    } else {
-      summary =
-        "Your current AI tooling setup appears well optimized. No major overspending opportunities were detected based on your selected tools and usage.";
-    }
-
-    setAiSummary(summary);
-  };
+    setAiSummary(
+      "Your AI stack has optimization opportunities based on current usage."
+    );
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
