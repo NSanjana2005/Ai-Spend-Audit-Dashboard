@@ -1,7 +1,16 @@
-
 "use client";
+
 import { supabase } from "../lib/supabase";
 import { useEffect, useState } from "react";
+
+import {
+  Sparkles,
+  DollarSign,
+  Bot,
+  TrendingDown,
+  ShieldCheck,
+} from "lucide-react";
+
 const TOOL_OPTIONS: Record<string, string[]> = {
   ChatGPT: ["Plus", "Team", "Enterprise", "API"],
   Claude: ["Free", "Pro", "Max", "Team", "Enterprise", "API"],
@@ -19,14 +28,53 @@ type ToolType = {
 export default function Home() {
   const [teamSize, setTeamSize] = useState("");
   const [useCase, setUseCase] = useState("");
-  const [auditResult, setAuditResult] = useState<any>(null); // ✅ FIXED
+  const [auditResult, setAuditResult] = useState<any>(null);
+
   const [aiSummary, setAiSummary] = useState("");
+
+  const [loading, setLoading] = useState(false);
+
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
+
   const [tools, setTools] = useState<ToolType[]>([
     { tool: "", plan: "", cost: "", users: "" },
   ]);
+
+  // LOAD SAVED DATA
+  useEffect(() => {
+    const savedData = localStorage.getItem("audit-form");
+
+    if (savedData) {
+      const parsed = JSON.parse(savedData);
+
+      setTools(
+        parsed.tools?.length
+          ? parsed.tools
+          : [{ tool: "", plan: "", cost: "", users: "" }]
+      );
+
+      setTeamSize(parsed.teamSize || "");
+      setUseCase(parsed.useCase || "");
+      setAuditResult(parsed.auditResult || null);
+      setAiSummary(parsed.aiSummary || "");
+    }
+  }, []);
+
+  // SAVE DATA
+  useEffect(() => {
+    localStorage.setItem(
+      "audit-form",
+      JSON.stringify({
+        tools,
+        teamSize,
+        useCase,
+        auditResult,
+        aiSummary,
+      })
+    );
+  }, [tools, teamSize, useCase, auditResult, aiSummary]);
 
   const handleChange = (
     index: number,
@@ -54,72 +102,67 @@ export default function Home() {
   const addTool = () => {
     setTools([
       ...tools,
-      { tool: "", plan: "", cost: "", users: "" },
+      {
+        tool: "",
+        plan: "",
+        cost: "",
+        users: "",
+      },
     ]);
   };
-  // 🔥 Load saved form data
-  useEffect(() => {
-    const savedData = localStorage.getItem("audit-form");
 
-    if (savedData) {
-      const parsed = JSON.parse(savedData);
-
-      setTools(
-        parsed.tools?.length
-          ? parsed.tools
-          : [{ tool: "", plan: "", cost: "", users: "" }]
-      ); setTeamSize(parsed.teamSize || "");
-      setUseCase(parsed.useCase || "");
-      setAuditResult(parsed.auditResult || null);
-    }
-  }, []);
-
-  // 🔥 Save form data automatically
-  useEffect(() => {
-    localStorage.setItem(
-      "audit-form",
-      JSON.stringify({
-        tools,
-        teamSize,
-        useCase,
-        auditResult,
-      })
-    );
-  }, [tools, teamSize, useCase, auditResult]);
+  // AUDIT ENGINE
   const auditTools = (tools: ToolType[]) => {
     let results: any[] = [];
     let totalSavings = 0;
 
     tools.forEach((t) => {
       let savings = 0;
-      let suggestion = "Looks fine";
-      let reason = "You're already on a good plan";
+
+      let suggestion = "Current setup looks optimized";
+
+      let reason =
+        "No major savings opportunity detected.";
 
       const users = Number(t.users);
+
       const cost = Number(t.cost);
+
       const totalCurrentCost = users * cost;
 
-      // 🔹 ChatGPT Rule
-      if (t.tool === "ChatGPT" && t.plan === "Team" && users <= 3) {
+      // ChatGPT
+      if (
+        t.tool === "ChatGPT" &&
+        t.plan === "Team" &&
+        users <= 3
+      ) {
         const newCost = 20 * users;
 
         savings = totalCurrentCost - newCost;
 
         suggestion = "Switch to ChatGPT Plus";
-        reason = "Small teams usually don't need Team plan";
+
+        reason =
+          "Small teams usually don't need Team plan.";
       }
 
-      // 🔹 Claude Rule
-      if (t.tool === "Claude" && t.plan === "Team" && users <= 3) {
+      // Claude
+      if (
+        t.tool === "Claude" &&
+        t.plan === "Team" &&
+        users <= 3
+      ) {
         const newCost = 20 * users;
 
         savings = totalCurrentCost - newCost;
 
         suggestion = "Use Claude Pro";
-        reason = "Claude Team plan is expensive for small teams";
+
+        reason =
+          "Claude Team pricing is expensive for small teams.";
       }
 
-      // 🔹 Copilot Rule
+      // Copilot
       if (
         t.tool === "Copilot" &&
         t.plan === "Business" &&
@@ -129,11 +172,13 @@ export default function Home() {
 
         savings = totalCurrentCost - newCost;
 
-        suggestion = "Switch to Copilot Individual";
-        reason = "Business plan unnecessary for very small teams";
+        suggestion = "Use Copilot Individual";
+
+        reason =
+          "Business plan may be unnecessary.";
       }
 
-      // 🔹 Cursor Rule
+      // Cursor
       if (
         t.tool === "Cursor" &&
         t.plan === "Business" &&
@@ -144,15 +189,12 @@ export default function Home() {
         savings = totalCurrentCost - newCost;
 
         suggestion = "Switch to Cursor Pro";
-        reason = "Business plan may be overkill";
+
+        reason =
+          "Business plan may be overkill.";
       }
 
-      // 🔹 Honest Result
-      if (savings <= 0) {
-        savings = 0;
-        suggestion = "Current setup looks optimized";
-        reason = "No obvious savings opportunity found";
-      }
+      if (savings < 0) savings = 0;
 
       totalSavings += savings;
 
@@ -164,303 +206,497 @@ export default function Home() {
       });
     });
 
-    return { results, totalSavings };
+    return {
+      results,
+      totalSavings,
+    };
   };
- const handleSubmit = async (
-  e: React.FormEvent
-) => {
-  e.preventDefault();
 
-  const audit = auditTools(tools);
+  // SUBMIT
+  const handleSubmit = async (
+    e: React.FormEvent
+  ) => {
+    e.preventDefault();
 
-  setAuditResult(audit);
+    setLoading(true);
 
-  try {
-    const response = await fetch("/api/summary", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(audit),
-    });
+    const audit = auditTools(tools);
 
-    const data = await response.json();
+    setAuditResult(audit);
 
-    setAiSummary(data.summary);
-  } catch (error) {
-    console.error(error);
+    try {
+      const response = await fetch(
+        "/api/summary",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify(audit),
+        }
+      );
 
-    setAiSummary(
-      "Your AI stack has optimization opportunities based on current usage."
-    );
-  }
-};
+      const data = await response.json();
+
+      setAiSummary(data.summary);
+    } catch (error) {
+      console.error(error);
+
+      if (audit.totalSavings > 0) {
+        setAiSummary(
+          `Your team could save approximately $${audit.totalSavings} monthly by optimizing AI plan selection and removing unnecessary upgrades.`
+        );
+      } else {
+        setAiSummary(
+          "Your current AI stack appears cost-efficient based on your selected tools and usage."
+        );
+      }
+    }
+
+    setLoading(false);
+  };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex flex-col items-center">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 p-6">
 
-      {/* FORM */}
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white p-6 rounded-xl shadow-md w-96"
-      >
-        <h2 className="text-xl font-bold mb-4 text-center">
-          AI Spend Audit
-        </h2>
+      <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8">
 
-        {tools.map((t, index) => (
-          <div key={index} className="mb-4 border p-3 rounded">
+        {/* LEFT */}
+        <div className="flex flex-col justify-center">
 
-            {/* TOOL */}
-            <select
-              value={t.tool}
+          <div className="mb-8">
+            <div className="inline-flex items-center gap-2 bg-black text-white px-4 py-2 rounded-full text-sm mb-4">
+              <Sparkles size={16} />
+              AI Spend Optimizer
+            </div>
+
+            <h1 className="text-5xl font-extrabold leading-tight text-gray-900">
+              Stop Overpaying
+              <br />
+              for AI Tools
+            </h1>
+
+            <p className="text-gray-600 mt-5 text-lg leading-8">
+              Instantly audit ChatGPT, Claude,
+              Cursor, Copilot and more.
+              Discover hidden savings in under
+              60 seconds.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border">
+              <DollarSign className="mb-3 text-green-600" />
+              <h3 className="font-semibold">
+                Cost Optimization
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Find unnecessary AI spending.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border">
+              <TrendingDown className="mb-3 text-blue-600" />
+              <h3 className="font-semibold">
+                Instant Savings
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Compare cheaper alternatives.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border">
+              <Bot className="mb-3 text-purple-600" />
+              <h3 className="font-semibold">
+                AI Insights
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Personalized audit summary.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-2xl p-5 shadow-sm border">
+              <ShieldCheck className="mb-3 text-orange-600" />
+              <h3 className="font-semibold">
+                Honest Recommendations
+              </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                No fake savings calculations.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* RIGHT FORM */}
+        <div>
+
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-3xl shadow-2xl border border-gray-200 p-8"
+          >
+            <h2 className="text-3xl font-bold mb-2">
+              Run Free Audit
+            </h2>
+
+            <p className="text-gray-500 mb-6">
+              Analyze your AI tool spending.
+            </p>
+
+            {tools.map((t, index) => (
+              <div
+                key={index}
+                className="border border-gray-200 rounded-2xl p-4 mb-4 bg-gray-50"
+              >
+
+                <select
+                  value={t.tool}
+                  onChange={(e) =>
+                    handleChange(
+                      index,
+                      "tool",
+                      e.target.value
+                    )
+                  }
+                  className="w-full mb-3 border rounded-xl p-3"
+                >
+                  <option value="">
+                    Select Tool
+                  </option>
+
+                  {Object.keys(
+                    TOOL_OPTIONS
+                  ).map((tool) => (
+                    <option
+                      key={tool}
+                      value={tool}
+                    >
+                      {tool}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={t.plan}
+                  onChange={(e) =>
+                    handleChange(
+                      index,
+                      "plan",
+                      e.target.value
+                    )
+                  }
+                  disabled={!t.tool}
+                  className="w-full mb-3 border rounded-xl p-3"
+                >
+                  <option value="">
+                    {t.tool
+                      ? "Select Plan"
+                      : "Select Tool first"}
+                  </option>
+
+                  {(TOOL_OPTIONS[t.tool] ||
+                    []).map((plan) => (
+                    <option
+                      key={plan}
+                      value={plan}
+                    >
+                      {plan}
+                    </option>
+                  ))}
+                </select>
+
+                <div className="grid grid-cols-2 gap-3">
+
+                  <input
+                    type="number"
+                    placeholder="Cost ($)"
+                    value={t.cost}
+                    onChange={(e) =>
+                      handleChange(
+                        index,
+                        "cost",
+                        e.target.value
+                      )
+                    }
+                    className="border rounded-xl p-3"
+                  />
+
+                  <input
+                    type="number"
+                    placeholder="Users"
+                    value={t.users}
+                    onChange={(e) =>
+                      handleChange(
+                        index,
+                        "users",
+                        e.target.value
+                      )
+                    }
+                    className="border rounded-xl p-3"
+                  />
+                </div>
+              </div>
+            ))}
+
+            <input
+              type="number"
+              placeholder="Team Size"
+              value={teamSize}
               onChange={(e) =>
-                handleChange(index, "tool", e.target.value)
+                setTeamSize(e.target.value)
               }
-              className="w-full mb-2 p-2 border rounded"
-            >
-              <option value="">Select Tool</option>
-              {Object.keys(TOOL_OPTIONS).map((tool) => (
-                <option key={tool} value={tool}>
-                  {tool}
-                </option>
-              ))}
-            </select>
+              className="w-full border rounded-xl p-3 mb-3"
+            />
 
-            {/* PLAN */}
             <select
-              value={t.plan}
+              value={useCase}
               onChange={(e) =>
-                handleChange(index, "plan", e.target.value)
+                setUseCase(e.target.value)
               }
-              className="w-full mb-2 p-2 border rounded"
-              disabled={!t.tool}
+              className="w-full border rounded-xl p-3 mb-4"
             >
               <option value="">
-                {t.tool ? "Select Plan" : "Select Tool first"}
+                Select Use Case
               </option>
 
-              {(TOOL_OPTIONS[t.tool] || []).map((plan) => (
-                <option key={plan} value={plan}>
-                  {plan}
-                </option>
-              ))}
+              <option value="coding">
+                Coding
+              </option>
+
+              <option value="writing">
+                Writing
+              </option>
+
+              <option value="data">
+                Data
+              </option>
+
+              <option value="research">
+                Research
+              </option>
+
+              <option value="mixed">
+                Mixed
+              </option>
             </select>
 
-            {/* COST */}
-            <input
-              type="number"
-              placeholder="Cost ($)"
-              value={t.cost}
-              onChange={(e) =>
-                handleChange(index, "cost", e.target.value)
-              }
-              className="w-full mb-2 p-2 border rounded"
-            />
+            <button
+              type="button"
+              onClick={addTool}
+              className="w-full border border-gray-300 rounded-xl p-3 mb-4 hover:bg-gray-50 transition"
+            >
+              + Add Another Tool
+            </button>
 
-            {/* USERS */}
-            <input
-              type="number"
-              placeholder="Users"
-              value={t.users}
-              onChange={(e) =>
-                handleChange(index, "users", e.target.value)
-              }
-              className="w-full p-2 border rounded"
-            />
-          </div>
-        ))}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-black to-gray-700 text-white rounded-xl p-4 font-semibold hover:opacity-90 transition"
+            >
+              {loading
+                ? "Analyzing..."
+                : "Check Savings"}
+            </button>
+          </form>
+        </div>
+      </div>
 
-        {/* TEAM SIZE */}
-        <input
-          type="number"
-          placeholder="Team Size"
-          value={teamSize}
-          onChange={(e) => setTeamSize(e.target.value)}
-          className="w-full mb-3 p-2 border rounded"
-        />
-
-        {/* USE CASE */}
-        <select
-          value={useCase}
-          onChange={(e) => setUseCase(e.target.value)}
-          className="w-full mb-3 p-2 border rounded"
-        >
-          <option value="">Select Use Case</option>
-          <option value="coding">Coding</option>
-          <option value="writing">Writing</option>
-          <option value="data">Data</option>
-          <option value="research">Research</option>
-          <option value="mixed">Mixed</option>
-        </select>
-
-        {/* ADD TOOL */}
-        <button
-          type="button"
-          onClick={addTool}
-          className="w-full mb-3 bg-gray-200 p-2 rounded"
-        >
-          + Add Another Tool
-        </button>
-
-        {/* SUBMIT */}
-        <button
-          type="submit"
-          className="w-full bg-black text-white p-2 rounded"
-        >
-          Check Savings
-        </button>
-      </form>
-
-      {/* RESULT UI */}
+      {/* RESULTS */}
       {auditResult && (
-        <div className="mt-6 w-full max-w-2xl bg-white rounded-2xl shadow-xl p-6">
+        <div className="max-w-4xl mx-auto mt-10 bg-white rounded-3xl shadow-2xl border p-8">
 
-          {/* HERO SECTION */}
-          <div className="text-center border-b pb-6 mb-6">
-            <p className="text-sm uppercase tracking-wide text-gray-500">
+          <div className="text-center border-b pb-8">
+
+            <p className="uppercase text-sm tracking-wider text-gray-500">
               Estimated Savings
             </p>
 
-            <h2 className="text-5xl font-bold text-green-600 mt-2">
+            <h2 className="text-6xl font-extrabold text-green-600 mt-3">
               ${auditResult.totalSavings}
-              <span className="text-lg text-gray-500 font-medium">
-                /month
-              </span>
             </h2>
 
-            <p className="text-gray-600 mt-2">
+            <p className="text-xl font-semibold text-gray-700 mt-3">
               ${(auditResult.totalSavings * 12).toLocaleString()} yearly savings
             </p>
 
-            {auditResult.totalSavings >= 500 ? (
-              <div className="mt-4 bg-green-100 text-green-800 p-3 rounded-lg text-sm">
-                High savings opportunity detected. Credex could help reduce your AI infrastructure costs further.
+            {auditResult.totalSavings === 0 ? (
+              <div className="mt-5 bg-green-100 text-green-800 rounded-2xl p-4">
+                Your AI stack is already well optimized.
               </div>
             ) : (
-              <div className="mt-4 bg-blue-100 text-blue-800 p-3 rounded-lg text-sm">
-                Your stack looks fairly optimized already.
+              <div className="mt-5 bg-blue-100 text-blue-800 rounded-2xl p-4">
+                Optimization opportunities detected.
               </div>
             )}
           </div>
+
           {/* AI SUMMARY */}
-          <div className="mb-6 bg-gray-50 border rounded-xl p-4">
-            <h3 className="font-semibold mb-2">
+          <div className="mt-8 bg-gray-50 border rounded-2xl p-6">
+            <h3 className="font-bold text-lg mb-3">
               🤖 AI Summary
             </h3>
 
-            <p className="text-gray-700 text-sm leading-6">
+            <p className="text-gray-700 leading-7">
               {aiSummary}
             </p>
           </div>
-          {/* TOOL BREAKDOWN */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">
+
+          {/* BREAKDOWN */}
+          <div className="mt-8">
+
+            <h3 className="text-2xl font-bold mb-5">
               Audit Breakdown
             </h3>
 
             <div className="space-y-4">
-              {auditResult.results.map((r: any, i: number) => (
-                <div
-                  key={i}
-                  className="border rounded-xl p-4 hover:shadow-md transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-semibold text-lg">
-                        {r.tool}
-                      </h4>
+              {auditResult.results.map(
+                (r: any, i: number) => (
+                  <div
+                    key={i}
+                    className="border rounded-2xl p-5 hover:shadow-md transition"
+                  >
+                    <div className="flex justify-between items-start">
 
-                      <p className="text-sm text-gray-500">
-                        Current Plan: {r.plan}
-                      </p>
+                      <div>
+                        <h4 className="text-xl font-semibold">
+                          {r.tool}
+                        </h4>
+
+                        <p className="text-gray-500">
+                          Current Plan: {r.plan}
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-green-600">
+                          ${r.savings}
+                        </p>
+
+                        <p className="text-sm text-gray-500">
+                          monthly savings
+                        </p>
+                      </div>
                     </div>
 
-                    <div className="text-right">
-                      <p className="text-green-600 font-bold text-lg">
-                        ${r.savings}
+                    <div className="mt-4">
+                      <p className="font-semibold">
+                        💡 {r.suggestion}
                       </p>
 
-                      <p className="text-xs text-gray-500">
-                        monthly savings
+                      <p className="text-gray-600 mt-1">
+                        {r.reason}
                       </p>
                     </div>
                   </div>
-
-                  <div className="mt-3">
-                    <p className="font-medium">
-                      💡 {r.suggestion}
-                    </p>
-
-                    <p className="text-sm text-gray-600 mt-1">
-                      {r.reason}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           </div>
-          {/* EMAIL CAPTURE */}
-          <div className="mt-8 border-t pt-6">
-            <h3 className="text-lg font-semibold mb-4">
-              Get Full Audit Report
+
+          {/* CREDEX CTA */}
+          {auditResult.totalSavings >= 500 && (
+            <div className="mt-8 bg-black text-white rounded-3xl p-8">
+              <h3 className="text-3xl font-bold mb-3">
+                Reduce Costs Even Further
+              </h3>
+
+              <p className="text-gray-300 mb-5">
+                Credex helps startups access discounted AI infrastructure credits.
+              </p>
+
+              <button className="bg-white text-black px-6 py-3 rounded-xl font-semibold">
+                Book Credex Consultation
+              </button>
+            </div>
+          )}
+
+          {/* EMAIL */}
+          <div className="mt-10 border-t pt-8">
+
+            <h3 className="text-2xl font-bold mb-2">
+              Save Full Report
             </h3>
 
-            <p className="text-sm text-gray-600 mb-4">
-              Save your audit and receive future optimization updates.
+            <p className="text-gray-500 mb-5">
+              Receive future optimization updates.
             </p>
 
-            <div className="space-y-3">
+            <div className="space-y-4">
+
               <input
                 type="email"
                 placeholder="Email Address"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border rounded-lg p-3"
+                onChange={(e) =>
+                  setEmail(e.target.value)
+                }
+                className="w-full border rounded-xl p-3"
               />
 
               <input
                 type="text"
                 placeholder="Company Name (optional)"
                 value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                className="w-full border rounded-lg p-3"
+                onChange={(e) =>
+                  setCompany(e.target.value)
+                }
+                className="w-full border rounded-xl p-3"
               />
 
               <input
                 type="text"
-                placeholder="Your Role (optional)"
+                placeholder="Role (optional)"
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="w-full border rounded-lg p-3"
+                onChange={(e) =>
+                  setRole(e.target.value)
+                }
+                className="w-full border rounded-xl p-3"
               />
 
               <button
-                className="w-full bg-black text-white p-3 rounded-lg hover:bg-gray-800 transition"
+                className="w-full bg-black text-white rounded-xl p-4 font-semibold hover:bg-gray-800 transition"
                 onClick={async () => {
                   if (!email) {
                     alert("Email is required");
                     return;
                   }
 
-                  const { error } = await supabase
-                    .from("leads")
-                    .insert([
-                      {
-                        email,
-                        company,
-                        role,
-                        audit: auditResult,
-                      },
-                    ]);
+                  const emailRegex =
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-                  if (error) {
-                    console.error(error);
-                    alert("Failed to save report");
+                  if (
+                    !emailRegex.test(email)
+                  ) {
+                    alert(
+                      "Enter valid email"
+                    );
                     return;
                   }
 
-                  alert("Report saved successfully!");
+                  const { error } =
+                    await supabase
+                      .from("leads")
+                      .insert([
+                        {
+                          email,
+                          company,
+                          role,
+                          audit: auditResult,
+                        },
+                      ]);
+
+                  if (error) {
+                    alert(
+                      "Failed to save"
+                    );
+
+                    return;
+                  }
+
+                  alert(
+                    "Report saved successfully!"
+                  );
                 }}
               >
                 Save Report
