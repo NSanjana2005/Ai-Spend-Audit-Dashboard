@@ -22,67 +22,57 @@ const getPlansFor = (tool: string) => PLAN_OPTIONS_MAP[tool] || PLAN_OPTIONS_MAP
 const USE_CASES = ["Coding", "Writing", "Research", "Data", "Mixed"] as const;
 
 export default function AuditDashboard() {
-  const [context, setContext] = useState<AuditContext>(() => {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("credex_context");
+  const [context, setContext] = useState<AuditContext>({
+    totalTeamSize: 5,
+    primaryUseCase: "Coding"
+  });
 
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return { totalTeamSize: 5, primaryUseCase: "Coding" };
-      }
-    }
-  }
-
-  return { totalTeamSize: 5, primaryUseCase: "Coding" };
-});
-
-const [tools, setTools] = useState<AuditInput[]>(() => {
-  if (typeof window !== "undefined") {
-    const saved = localStorage.getItem("credex_tools");
-
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return [
-          {
-            toolName: "ChatGPT",
-            currentPlan: "Enterprise",
-            monthlySpend: 60,
-            users: 1,
-          },
-        ];
-      }
-    }
-  }
-
-  return [
+  const [tools, setTools] = useState<AuditInput[]>([
     {
       toolName: "ChatGPT",
       currentPlan: "Enterprise",
       monthlySpend: 60,
       users: 1,
     },
-  ];
-});
+  ]);
+
   const [results, setResults] = useState<AuditResult[] | null>(null);
-  
+
   const [isAuditing, setIsAuditing] = useState(false);
   const [aiSummary, setAiSummary] = useState<string>("");
   const [shareableId, setShareableId] = useState<string | null>(null);
-  
+  const [hydrated, setHydrated] = useState(false);
   // Lead capture state
   const [leadFields, setLeadFields] = useState({ email: '', companyName: '', role: '', honeypot: '' });
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [leadLoading, setLeadLoading] = useState(false);
   // Sync to LocalStorage
-  useEffect(() => {
-    localStorage.setItem('credex_tools', JSON.stringify(tools));
-    localStorage.setItem('credex_context', JSON.stringify(context));
-  }, [tools, context]);
 
+  useEffect(() => {
+    const savedTools = localStorage.getItem("credex_tools");
+    const savedContext = localStorage.getItem("credex_context");
+
+    if (savedTools) {
+      try {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTools(JSON.parse(savedTools));
+      } catch { }
+    }
+    if (savedContext) {
+      try {
+   
+        setContext(JSON.parse(savedContext));
+      } catch { }
+    }
+
+    setHydrated(true);
+  }, []);
+  useEffect(() => {
+    if (!hydrated) return;
+
+    localStorage.setItem("credex_tools", JSON.stringify(tools));
+    localStorage.setItem("credex_context", JSON.stringify(context));
+  }, [tools, context, hydrated]);
   const handleContextChange = (field: keyof AuditContext, value: string | number) => {
     setContext({ ...context, [field]: value });
   };
@@ -92,8 +82,8 @@ const [tools, setTools] = useState<AuditInput[]>(() => {
     updated[index] = { ...updated[index], [field]: value };
     // Trigger reset of plan if tool changes to a mismatching plan mapping
     if (field === 'toolName') {
-        const allowedPlans = getPlansFor(value as string);
-        if (!allowedPlans.includes(updated[index].currentPlan)) updated[index].currentPlan = allowedPlans[0];
+      const allowedPlans = getPlansFor(value as string);
+      if (!allowedPlans.includes(updated[index].currentPlan)) updated[index].currentPlan = allowedPlans[0];
     }
     setTools(updated);
   };
@@ -111,10 +101,10 @@ const [tools, setTools] = useState<AuditInput[]>(() => {
     setResults(null);
     setAiSummary("");
     setShareableId(null);
-    
+
     // Client-side execution of heavy mathematical audit
     const generatedResults = runAuditCycle(tools, context);
-    
+
     try {
       // Async call for LLM generated summary & DB record creation
       const res = await fetch('/api/audit', {
@@ -138,28 +128,36 @@ const [tools, setTools] = useState<AuditInput[]>(() => {
     e.preventDefault();
     setLeadLoading(true);
     try {
-       await fetch('/api/lead', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-             auditId: shareableId,
-             email: leadFields.email,
-             companyName: leadFields.companyName,
-             role: leadFields.role,
-             totalSavings: totalMonthlySavings,
-             honeypot: leadFields.honeypot
-          })
-       });
-       setLeadSubmitted(true);
+      await fetch('/api/lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          auditId: shareableId,
+          email: leadFields.email,
+          companyName: leadFields.companyName,
+          role: leadFields.role,
+          totalSavings: totalMonthlySavings,
+          honeypot: leadFields.honeypot
+        })
+      });
+      setLeadSubmitted(true);
     } catch (err) {
-       console.error("Lead submission error", err);
+      console.error("Lead submission error", err);
     }
     setLeadLoading(false);
   };
 
   const totalMonthlySavings = results ? results.reduce((acc, r) => acc + r.potentialSavings, 0) : 0;
   const totalYearlySavings = totalMonthlySavings * 12;
-
+  if (!hydrated) {
+    return (
+      <div className="audit-container">
+        <div className="empty-state">
+          <div className="spinner"></div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="audit-container">
       <header className="audit-header">
@@ -236,13 +234,13 @@ const [tools, setTools] = useState<AuditInput[]>(() => {
               <p>Evaluating LLM usage and overpack bounds...</p>
             </div>
           )}
-          
+
           {results && !isAuditing && (
             <div className="results-dashboard animate-in">
               {aiSummary && (
-                <div className="ai-summary section-card" style={{backgroundColor: '#e0e7ff', borderColor: '#c7d2fe', padding: '1rem'}}>
-                   <h3 style={{marginTop:0, marginBottom:'0.5rem', fontSize:'0.9rem', color:'#4338ca'}}>✨ AI Executive Summary</h3>
-                   <p style={{fontSize:'0.9rem', color:'#312e81', margin:0, lineHeight:'1.5'}}>{aiSummary}</p>
+                <div className="ai-summary section-card" style={{ backgroundColor: '#e0e7ff', borderColor: '#c7d2fe', padding: '1rem' }}>
+                  <h3 style={{ marginTop: 0, marginBottom: '0.5rem', fontSize: '0.9rem', color: '#4338ca' }}>✨ AI Executive Summary</h3>
+                  <p style={{ fontSize: '0.9rem', color: '#312e81', margin: 0, lineHeight: '1.5' }}>{aiSummary}</p>
                 </div>
               )}
 
@@ -258,21 +256,21 @@ const [tools, setTools] = useState<AuditInput[]>(() => {
               </div>
 
               {totalMonthlySavings > 500 && (
-                <div style={{background: '#fef2f2', padding: '1.25rem', borderRadius: '8px', borderLeft: '5px solid #ef4444', marginBottom: '1.5rem'}}>
-                  <h3 style={{margin: '0 0 0.5rem 0', color: '#991b1b', fontSize: '1.1rem'}}>🚨 Massive Savings Opportunity Detected</h3>
-                  <p style={{margin: '0 0 1rem 0', fontSize: '0.95rem', color: '#7f1d1d'}}>Your enterprise scale warrants heavily discounted bulk credits. <strong>Credex</strong> connects platforms with pooled volume to cut this exact overhead.</p>
-                  <a href="#claim" style={{background: '#b91c1c', color: '#fff', padding: '0.5rem 1rem', borderRadius: '6px', textDecoration: 'none', fontSize: '0.95rem', fontWeight:'600'}}>Talk to Credex Savings Experts</a>
+                <div style={{ background: '#fef2f2', padding: '1.25rem', borderRadius: '8px', borderLeft: '5px solid #ef4444', marginBottom: '1.5rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', color: '#991b1b', fontSize: '1.1rem' }}>🚨 Massive Savings Opportunity Detected</h3>
+                  <p style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', color: '#7f1d1d' }}>Your enterprise scale warrants heavily discounted bulk credits. <strong>Credex</strong> connects platforms with pooled volume to cut this exact overhead.</p>
+                  <a href="#claim" style={{ background: '#b91c1c', color: '#fff', padding: '0.5rem 1rem', borderRadius: '6px', textDecoration: 'none', fontSize: '0.95rem', fontWeight: '600' }}>Talk to Credex Savings Experts</a>
                 </div>
               )}
 
               {totalMonthlySavings < 100 && totalMonthlySavings >= 0 && (
-                <div style={{background: '#f0fdf4', padding: '1.25rem', borderRadius: '8px', borderLeft: '5px solid #10b981', marginBottom: '1.5rem'}}>
-                  <h3 style={{margin: '0 0 0.5rem 0', color: '#064e3b', fontSize: '1.1rem'}}>✅ You are spending well.</h3>
-                  <p style={{margin: '0', fontSize: '0.95rem', color: '#065f46'}}>Your unit economics look clean with no major enterprise overkill. Keep it up!</p>
+                <div style={{ background: '#f0fdf4', padding: '1.25rem', borderRadius: '8px', borderLeft: '5px solid #10b981', marginBottom: '1.5rem' }}>
+                  <h3 style={{ margin: '0 0 0.5rem 0', color: '#064e3b', fontSize: '1.1rem' }}>✅ You are spending well.</h3>
+                  <p style={{ margin: '0', fontSize: '0.95rem', color: '#065f46' }}>Your unit economics look clean with no major enterprise overkill. Keep it up!</p>
                 </div>
               )}
 
-              <div className="insight-list" style={{marginBottom: '2rem'}}>
+              <div className="insight-list" style={{ marginBottom: '2rem' }}>
                 {results.map((r, i) => (
                   <div key={i} className={`insight-card ${r.status === 'OPTIMIZED' ? 'status-optimized' : 'status-warning'}`}>
                     <div className="insight-header">
@@ -304,38 +302,38 @@ const [tools, setTools] = useState<AuditInput[]>(() => {
               </div>
 
               {!leadSubmitted ? (
-                 <div className="section-card" id="claim" style={{border: '1px solid #e2e8f0', background: '#f8fafc', padding: '1.5rem', textAlign: 'center'}}>
-                    <h3 style={{marginBottom: '0.25rem', color:'#0f172a'}}>Keep this audit on hand</h3>
-                    <p style={{fontSize:'0.9rem', color:'#64748b', marginBottom:'1rem'}}>We&apos;ll email you a copy of these insights. Plus, we&apos;ll notify you when cheaper models drop.</p>
-                    <form onSubmit={submitLead} style={{display:'flex', flexDirection:'column', gap:'0.75rem', alignItems:'center'}}>
-                      <input type="text" name="honeypotid" value={leadFields.honeypot} onChange={e => setLeadFields({...leadFields, honeypot: e.target.value})} style={{display:'none'}} tabIndex={-1} autoComplete="off" />
-                      
-                      <div style={{display:'flex', gap:'0.75rem', width:'100%', maxWidth:'500px'}}>
-                         <input type="text" placeholder="Company Name" required value={leadFields.companyName} onChange={e => setLeadFields({...leadFields, companyName: e.target.value})} style={{flex: 1}} />
-                         <input type="text" placeholder="Your Role (e.g. CTO)" required value={leadFields.role} onChange={e => setLeadFields({...leadFields, role: e.target.value})} style={{flex: 1}} />
-                      </div>
-                      
-                      <div style={{display:'flex', gap:'0.75rem', width:'100%', maxWidth:'500px'}}>
-                         <input type="email" placeholder="founder@company.com" required value={leadFields.email} onChange={e => setLeadFields({...leadFields, email: e.target.value})} style={{flex: 1}} />
-                         <button type="submit" disabled={leadLoading} style={{background: '#2563eb', color: '#fff', border:'none', padding:'0 1.5rem', borderRadius:'6px', fontWeight:'600', cursor:'pointer'}}>
-                            {leadLoading ? '...' : 'Send my report'}
-                         </button>
-                      </div>
-                    </form>
-                 </div>
+                <div className="section-card" id="claim" style={{ border: '1px solid #e2e8f0', background: '#f8fafc', padding: '1.5rem', textAlign: 'center' }}>
+                  <h3 style={{ marginBottom: '0.25rem', color: '#0f172a' }}>Keep this audit on hand</h3>
+                  <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '1rem' }}>We&apos;ll email you a copy of these insights. Plus, we&apos;ll notify you when cheaper models drop.</p>
+                  <form onSubmit={submitLead} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center' }}>
+                    <input type="text" name="honeypotid" value={leadFields.honeypot} onChange={e => setLeadFields({ ...leadFields, honeypot: e.target.value })} style={{ display: 'none' }} tabIndex={-1} autoComplete="off" />
+
+                    <div style={{ display: 'flex', gap: '0.75rem', width: '100%', maxWidth: '500px' }}>
+                      <input type="text" placeholder="Company Name" required value={leadFields.companyName} onChange={e => setLeadFields({ ...leadFields, companyName: e.target.value })} style={{ flex: 1 }} />
+                      <input type="text" placeholder="Your Role (e.g. CTO)" required value={leadFields.role} onChange={e => setLeadFields({ ...leadFields, role: e.target.value })} style={{ flex: 1 }} />
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '0.75rem', width: '100%', maxWidth: '500px' }}>
+                      <input type="email" placeholder="founder@company.com" required value={leadFields.email} onChange={e => setLeadFields({ ...leadFields, email: e.target.value })} style={{ flex: 1 }} />
+                      <button type="submit" disabled={leadLoading} style={{ background: '#2563eb', color: '#fff', border: 'none', padding: '0 1.5rem', borderRadius: '6px', fontWeight: '600', cursor: 'pointer' }}>
+                        {leadLoading ? '...' : 'Send my report'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
               ) : (
-                 <div className="section-card" style={{border: '1px solid #bbf7d0', background: '#f0fdf4', padding: '1.5rem', textAlign: 'center'}}>
-                    <h3 style={{color:'#166534', margin:0}}>Check your inbox!</h3>
-                    <p style={{color:'#15803d', fontSize:'0.9rem', marginBottom:0}}>We&apos;ve sent your detailed breakdown.</p>
-                 </div>
+                <div className="section-card" style={{ border: '1px solid #bbf7d0', background: '#f0fdf4', padding: '1.5rem', textAlign: 'center' }}>
+                  <h3 style={{ color: '#166534', margin: 0 }}>Check your inbox!</h3>
+                  <p style={{ color: '#15803d', fontSize: '0.9rem', marginBottom: 0 }}>We&apos;ve sent your detailed breakdown.</p>
+                </div>
               )}
 
               {shareableId && (
-                  <div style={{marginTop: '1rem', textAlign:'center'}}>
-                    <a href={`/share/${shareableId}`} target="_blank" rel="noreferrer" style={{color: '#2563eb', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 600}}>
-                      🔗 Get Shareable Public Link
-                    </a>
-                  </div>
+                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                  <a href={`/share/${shareableId}`} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontSize: '0.9rem', textDecoration: 'none', fontWeight: 600 }}>
+                    🔗 Get Shareable Public Link
+                  </a>
+                </div>
               )}
             </div>
           )}
