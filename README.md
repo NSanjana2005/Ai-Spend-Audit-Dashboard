@@ -11,7 +11,7 @@ Help startups immediately understand their AI burn — and unlock meaningful sav
 This tool also acts as a lead-generation engine for Credex, surfacing companies with high optimization potential and routing them toward volume-discounted AI credits.
 
 🌐 Live Demo
-👉 Live URL: ai-spend-audit-dashboard.vercel.app
+👉 **[Open Live Application](https://ai-spend-audit-dashboard.vercel.app)**
 
 
 📸 Screenshots
