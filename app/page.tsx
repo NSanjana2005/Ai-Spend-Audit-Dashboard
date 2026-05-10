@@ -22,8 +22,51 @@ const getPlansFor = (tool: string) => PLAN_OPTIONS_MAP[tool] || PLAN_OPTIONS_MAP
 const USE_CASES = ["Coding", "Writing", "Research", "Data", "Mixed"] as const;
 
 export default function AuditDashboard() {
-  const [context, setContext] = useState<AuditContext>({ totalTeamSize: 5, primaryUseCase: "Coding" });
-  const [tools, setTools] = useState<AuditInput[]>([]);
+  const [context, setContext] = useState<AuditContext>(() => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("credex_context");
+
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return { totalTeamSize: 5, primaryUseCase: "Coding" };
+      }
+    }
+  }
+
+  return { totalTeamSize: 5, primaryUseCase: "Coding" };
+});
+
+const [tools, setTools] = useState<AuditInput[]>(() => {
+  if (typeof window !== "undefined") {
+    const saved = localStorage.getItem("credex_tools");
+
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [
+          {
+            toolName: "ChatGPT",
+            currentPlan: "Enterprise",
+            monthlySpend: 60,
+            users: 1,
+          },
+        ];
+      }
+    }
+  }
+
+  return [
+    {
+      toolName: "ChatGPT",
+      currentPlan: "Enterprise",
+      monthlySpend: 60,
+      users: 1,
+    },
+  ];
+});
   const [results, setResults] = useState<AuditResult[] | null>(null);
   
   const [isAuditing, setIsAuditing] = useState(false);
@@ -34,20 +77,6 @@ export default function AuditDashboard() {
   const [leadFields, setLeadFields] = useState({ email: '', companyName: '', role: '', honeypot: '' });
   const [leadSubmitted, setLeadSubmitted] = useState(false);
   const [leadLoading, setLeadLoading] = useState(false);
-
-  // Load from LocalStorage
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => {
-    const savedTools = localStorage.getItem('credex_tools');
-    const savedContext = localStorage.getItem('credex_context');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (savedTools) setTools(JSON.parse(savedTools));
-    else setTools([{ toolName: "ChatGPT", currentPlan: "Enterprise", monthlySpend: 60, users: 1 }]);
-    
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    if (savedContext) setContext(JSON.parse(savedContext));
-  }, []);
-
   // Sync to LocalStorage
   useEffect(() => {
     localStorage.setItem('credex_tools', JSON.stringify(tools));
