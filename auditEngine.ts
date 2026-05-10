@@ -133,7 +133,7 @@ export function analyzeToolSpend(tool: AuditInput, context: AuditContext): Audit
 
   // Cross-check 5: Team Unnecessary
   if (isTeam && tool.users <= 2) {
-    const individualTiers = Object.entries(toolData.config.plans).filter(([n, p]) => p > 0 && p <= 20); // Pro/Plus/Individual
+    const individualTiers = Object.entries(toolData.config.plans).filter(([, p]) => p > 0 && p <= 20); // Pro/Plus/Individual
     if (individualTiers.length > 0) {
       const [recName, recPrice] = individualTiers[individualTiers.length - 1];
       return buildResult(tool, recName, recPrice * tool.users, `Team features don't add enough ROI for 1-2 users. Switch to individual ${recName} subscriptions to save costs.`);

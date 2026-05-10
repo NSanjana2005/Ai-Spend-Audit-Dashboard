@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const fs = require('fs');
 const envConfig = fs.readFileSync('.env.local', 'utf8').split('\n');
 envConfig.forEach(line => {

@@ -15,6 +15,6 @@ export interface AuditRecord {
   total_monthly_spend: number;
   total_monthly_savings: number;
   ai_summary: string;
-  raw_data: any;
+  raw_data: Record<string, unknown>;
   created_at?: string;
 }

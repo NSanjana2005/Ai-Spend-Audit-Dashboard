@@ -1,6 +1,7 @@
 import { supabase } from '../../../lib/supabase';
-import { notFound } from 'next/navigation';
 import '../../page.css';
+import Link from 'next/link';
+import { AuditResult } from '../../../auditEngine';
 
 // OpenGraph config for the page based on the ID dynamically
 export async function generateMetadata(props: { params: Promise<{ id: string }> }) {
@@ -34,7 +35,7 @@ export default async function SharedAuditPage(props: { params: Promise<{ id: str
     return (
       <div className="audit-container" style={{ textAlign: 'center', marginTop: '10vh' }}>
         <h1 style={{fontSize: '2rem', marginBottom: '1rem', color: '#0f172a'}}>Audit Not Found</h1>
-        <p style={{color: '#64748b'}}>We couldn't locate this audit. Either the link is invalid, or the Database table is missing.</p>
+        <p style={{color: '#64748b'}}>We couldn&apos;t locate this audit. Either the link is invalid, or the Database table is missing.</p>
         <p style={{fontSize: '0.85rem', color: '#94a3b8', marginTop: '1rem'}}>(Ensure you created the `audits` table in Supabase!)</p>
       </div>
     );
@@ -66,7 +67,7 @@ export default async function SharedAuditPage(props: { params: Promise<{ id: str
          
          <h3 style={{marginTop: '2rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem'}}>Tool Breakdown</h3>
          <div className="insight-list">
-             {results.map((r: any, i: number) => (
+             {results.map((r: AuditResult, i: number) => (
                <div key={i} className={`insight-card ${r.status === 'OPTIMIZED' ? 'status-optimized' : 'status-warning'}`}>
                  <div className="insight-header">
                    <h3>{r.toolName}</h3>
@@ -80,9 +81,9 @@ export default async function SharedAuditPage(props: { params: Promise<{ id: str
          </div>
          
          <div style={{marginTop: '3rem', textAlign: 'center'}}>
-            <a href="/" style={{background: '#2563eb', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', textDecoration: 'none', fontWeight: 600}}>
+             <Link href="/" style={{background: '#2563eb', color: 'white', padding: '0.75rem 1.5rem', borderRadius: '8px', textDecoration: 'none', fontWeight: 600}}>
               Run Your Own Free Audit
-            </a>
+            </Link>
          </div>
        </div>
     </div>

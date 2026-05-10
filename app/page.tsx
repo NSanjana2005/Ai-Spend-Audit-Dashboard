@@ -36,12 +36,15 @@ export default function AuditDashboard() {
   const [leadLoading, setLeadLoading] = useState(false);
 
   // Load from LocalStorage
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const savedTools = localStorage.getItem('credex_tools');
     const savedContext = localStorage.getItem('credex_context');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     if (savedTools) setTools(JSON.parse(savedTools));
     else setTools([{ toolName: "ChatGPT", currentPlan: "Enterprise", monthlySpend: 60, users: 1 }]);
     
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     if (savedContext) setContext(JSON.parse(savedContext));
   }, []);
 
@@ -51,16 +54,16 @@ export default function AuditDashboard() {
     localStorage.setItem('credex_context', JSON.stringify(context));
   }, [tools, context]);
 
-  const handleContextChange = (field: keyof AuditContext, value: any) => {
+  const handleContextChange = (field: keyof AuditContext, value: string | number) => {
     setContext({ ...context, [field]: value });
   };
 
-  const handleToolChange = (index: number, field: keyof AuditInput, value: any) => {
+  const handleToolChange = (index: number, field: keyof AuditInput, value: string | number) => {
     const updated = [...tools];
     updated[index] = { ...updated[index], [field]: value };
     // Trigger reset of plan if tool changes to a mismatching plan mapping
     if (field === 'toolName') {
-        const allowedPlans = getPlansFor(value);
+        const allowedPlans = getPlansFor(value as string);
         if (!allowedPlans.includes(updated[index].currentPlan)) updated[index].currentPlan = allowedPlans[0];
     }
     setTools(updated);
@@ -274,7 +277,7 @@ export default function AuditDashboard() {
               {!leadSubmitted ? (
                  <div className="section-card" id="claim" style={{border: '1px solid #e2e8f0', background: '#f8fafc', padding: '1.5rem', textAlign: 'center'}}>
                     <h3 style={{marginBottom: '0.25rem', color:'#0f172a'}}>Keep this audit on hand</h3>
-                    <p style={{fontSize:'0.9rem', color:'#64748b', marginBottom:'1rem'}}>We'll email you a copy of these insights. Plus, we'll notify you when cheaper models drop.</p>
+                    <p style={{fontSize:'0.9rem', color:'#64748b', marginBottom:'1rem'}}>We&apos;ll email you a copy of these insights. Plus, we&apos;ll notify you when cheaper models drop.</p>
                     <form onSubmit={submitLead} style={{display:'flex', flexDirection:'column', gap:'0.75rem', alignItems:'center'}}>
                       <input type="text" name="honeypotid" value={leadFields.honeypot} onChange={e => setLeadFields({...leadFields, honeypot: e.target.value})} style={{display:'none'}} tabIndex={-1} autoComplete="off" />
                       
@@ -294,7 +297,7 @@ export default function AuditDashboard() {
               ) : (
                  <div className="section-card" style={{border: '1px solid #bbf7d0', background: '#f0fdf4', padding: '1.5rem', textAlign: 'center'}}>
                     <h3 style={{color:'#166534', margin:0}}>Check your inbox!</h3>
-                    <p style={{color:'#15803d', fontSize:'0.9rem', marginBottom:0}}>We've sent your detailed breakdown.</p>
+                    <p style={{color:'#15803d', fontSize:'0.9rem', marginBottom:0}}>We&apos;ve sent your detailed breakdown.</p>
                  </div>
               )}
 
