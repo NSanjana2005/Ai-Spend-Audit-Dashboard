@@ -139,3 +139,12 @@
 
 **Plan for tomorrow:**
 - Submit assignment
+
+## CI Failure — OpenAI API Key Missing During Build (Resolved)
+
+- During the CI pipeline execution, the Next.js build failed because the /api/summary route was attempting to initialize the OpenAI client during the build phase without required environment variables. Since GitHub Actions does not include .env.local, process.env.OPENAI_API_KEY was undefined, causing a hard build crash.
+
+**Root Cause**
+- OpenAI client was being initialized at module import time instead of request time
+CI environment lacked required secrets
+Next.js App Router executes some server modules during build (next build data collection phase)
