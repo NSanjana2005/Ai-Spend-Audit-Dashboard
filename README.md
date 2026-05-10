@@ -1,22 +1,88 @@
-# Credex AI Spend Audit Engine
+🚀 Credex AI Spend Audit Engine
 
-The Credex Audit Engine is an intelligent benchmarking product that allows startups to quickly figure out exactly where they are overspending on AI models and tools. Designed for engineering managers and founders, it acts as a lead generation funnel by explicitly identifying overkill enterprise plans and unused phantom seats, before seamlessly pitching Credex's volume-discounted credits for those exact tools.
+The Credex AI Spend Audit Engine is a lightweight financial intelligence tool for startups that reveals hidden overspending across AI tools like ChatGPT, Claude, Cursor, and Copilot.
 
-## Screenshots / Video
-*[Embed 3 screenshots or a 30-second Loom link here before submission]*
+It analyzes real subscription usage, seat counts, and plan tiers to identify inefficient enterprise plans, underutilized seats, and better-cost alternatives.
 
-## Quick Start
+The goal is simple:
+
+Help startups immediately understand their AI burn — and unlock meaningful savings in under 30 seconds.
+
+This tool also acts as a lead-generation engine for Credex, surfacing companies with high optimization potential and routing them toward volume-discounted AI credits.
+
+🌐 Live Demo
+👉 Live URL: ai-spend-audit-dashboard.vercel.app
+
+
+📸 Screenshots
+### Dashboard
+![Dashboard](./screenshots/Dashboard-img-1.png)
+![Dashboard](./screenshots/Dashboard-img-2.png)
+
+### Results Page
+![Results](./screenshots/result-img-1.png)
+![Results](./screenshots/result-img-2.png)
+
+### Shareable Report
+![Share](./screenshots/share-url.png)
+
+
+⚡ Quick Start
 1. \`npm install\`
 2. Duplicate \`.env.example\` to \`.env.local\` and add your \`NEXT_PUBLIC_SUPABASE_URL\`, \`ANTHROPIC_API_KEY\`, and \`RESEND_API_KEY\`.
 3. Run \`npm run dev\` and access the frontend at \`localhost:3000\`.
 
-## Decisions & Trade-Offs
+🧠 Key Product Decisions & Trade-offs
+1. Local-first Audit Engine (No backend compute)
 
-1. **Vanilla React Context vs Global State (Redux/Zustand):** Kept state strictly local to \`page.tsx\` via standard Context variables rather than importing a large global state library. Given this is a 2-page app focused on one funnel, Zustand is overkill.
-2. **Vanilla CSS vs Tailwind:** Opted for CSS Modules/Vanilla CSS explicitly to create a premium, clean structure. Tailwind speeds up initial styling but can bloat jsx and complicate direct DOM overriding, though Tailwind is industry standard - utilizing Vanilla CSS limits hydration clashes here.
-3. **Client-side Audit vs Server-side computation:** The heavy ROI mathematical logic is kept strictly on and executed via the Client component. This saves significant server cost. The server is strictly reserved for the LLM interaction and Database commit.
-4. **Resend vs other Email providers:** Resend's API matches modern Node.js edge environments excellently and doesn't stringently require SMTP boilerplate, allowing us to send transactional emails in <5 lines of code.
-5. **No Auth Modal on Capture:** Purposely skipped adding NextAuth/Auth0. Adding friction right before demonstrating value reduces conversions in B2B lead generation. We capture email strictly at the value-exchange phase (Post-Audit).
+All pricing logic and optimization decisions are executed on the client side to reduce backend cost and latency. The server is only used for persistence and AI summarization.
 
-## Live URL
-*[Insert your Vercel/Render URL here before submission]*
+2. Deterministic Finance Logic > LLM reasoning
+
+Core audit recommendations are rule-based and deterministic (not AI-generated) to ensure:
+
+predictable outputs
+explainable savings calculations
+audit reliability for financial use cases
+3. No Authentication Gate
+
+Authentication was intentionally removed from the user journey to maximize conversion.
+
+Instead:
+
+value is shown first
+email is captured after insights are delivered
+
+This increases lead capture rates significantly in B2B funnels.
+
+4. Vanilla CSS over Tailwind
+
+Chosen for:
+
+tighter UI control
+reduced styling abstraction
+fewer hydration-related inconsistencies in Next.js App Router
+5. Lightweight Backend Strategy
+
+Next.js API routes are used only for:
+
+AI summary generation
+lead capture
+email delivery (Resend)
+
+This keeps architecture minimal and production-efficient.
+
+🔗 Architecture Summary
+React (client) handles form + interaction layer
+Audit engine runs deterministic cost analysis
+API routes handle:
+LLM-generated summaries
+Supabase lead storage
+transactional email delivery
+Shareable /share/[id] routes generate public audit reports
+
+🚀 What Makes This Product Valuable
+Detects real AI subscription waste in seconds
+Converts audits into high-intent enterprise leads
+Designed as a viral “shareable insight” tool
+Bridges cost optimization + SaaS lead generation
